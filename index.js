@@ -24,23 +24,23 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
   async function getLocation(agent) {
     const location = agent.parameters.location;
-    const query = `SELECT count(distinct listing_url) as cnt FROM \`natural-byway-293514.airbnb.listings_with_aspect_score\` where neighbourhood_group_cleansed like '%${location}%' and host_score is not null and location_score is not null and clean_score is not null and food_score is not null and facility_score is not null`;
+    const query = `SELECT count(distinct listing_url) as cnt FROM \`natural-byway-293514.airbnb.listings_with_aspect_score\` where lower(neighbourhood_group_cleansed) like lower('%${location}%') and host_score is not null and location_score is not null and clean_score is not null and food_score is not null and facility_score is not null`;
     const rows = await getData(query);
     const cnt = rows[0].cnt;
 
     if (cnt == 0) {
-      agent.add(`No records found, please retry with a new location`);
+      agent.add(`No records found, please retry with a new location (e.g Queen Anne, West Seattle, Capitol Hill, Rainier Valley, etc`);
       return;
     }
 
-    const response_str = `${cnt} hosts are found with location as ${location}! ` + '\n' + 'May I know what how many people do you have?';
+    const response_str = `${cnt} hosts are found with location as ${location}! ` + '\n\n' + 'May I know what how many people do you have?';
     agent.add(`${response_str}`);
   }
 
   async function getPax(agent) {
     const location = agent.context.get('location').parameters.location;
     const pax = agent.parameters.pax;
-    const query = `SELECT count(distinct listing_url) as cnt FROM \`natural-byway-293514.airbnb.listings_with_aspect_score\` where neighbourhood_group_cleansed like '%${location}%' and accommodates >= ${pax} and host_score is not null and location_score is not null and clean_score is not null and food_score is not null and facility_score is not null`;
+    const query = `SELECT count(distinct listing_url) as cnt FROM \`natural-byway-293514.airbnb.listings_with_aspect_score\` where lower(neighbourhood_group_cleansed) like lower('%${location}%') and accommodates >= ${pax} and host_score is not null and location_score is not null and clean_score is not null and food_score is not null and facility_score is not null`;
     const rows = await getData(query);
     const cnt = rows[0].cnt;
 
@@ -49,7 +49,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
       return;
     }
 
-    const response_str = `${cnt} hosts are found with location as ${location} that can accommodate for ${pax}!` + '\n' + 'May I know what is your budget?';
+    const response_str = `${cnt} hosts are found with location as ${location} that can accommodate for ${pax}!` + '\n\n' + 'May I know what is your budget?';
     agent.add(`${response_str}`);
   }
 
@@ -58,7 +58,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     const pax = agent.context.get('pax').parameters.pax;
     const budget_amt = agent.parameters.budget.amount;
     const budget_currenty = agent.parameters.budget.currency;
-    const query = `SELECT count(distinct listing_url) as cnt FROM \`natural-byway-293514.airbnb.listings_with_aspect_score\` where neighbourhood_group_cleansed like '%${location}%' and accommodates >= ${pax} and price <= ${budget_amt} and host_score is not null and location_score is not null and clean_score is not null and food_score is not null and facility_score is not null`;
+    const query = `SELECT count(distinct listing_url) as cnt FROM \`natural-byway-293514.airbnb.listings_with_aspect_score\` where lower(neighbourhood_group_cleansed) like lower('%${location}%') and accommodates >= ${pax} and price <= ${budget_amt} and host_score is not null and location_score is not null and clean_score is not null and food_score is not null and facility_score is not null`;
     const rows = await getData(query);
     const cnt = rows[0].cnt;
 
@@ -67,7 +67,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
       return;
     }
 
-    const response_str = `${cnt} hosts are found with location as ${location} that can accommodate for ${pax} with price no more than ${budget_amt}${budget_currenty}!` + '\n' + 'May I know which of following aspect is most important to you, \nnice host, \nconvinient loation, \ncleanliness, \ndelicious food, \n or plentiful facilities?';
+    const response_str = `${cnt} hosts are found with location as ${location} that can accommodate for ${pax} with price no more than ${budget_amt}${budget_currenty}!` + '\n\n' + 'May I know which of following aspect is most important to you, \nnice host, \nconvinient loation, \ncleanliness, \ndelicious food, \nor plentiful facilities?';
     agent.add(`${response_str}`);
   }
 
@@ -92,7 +92,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
       aspect_col = "facility_score";
     }
 
-    const query2 = `SELECT distinct listing_url, host_score, location_score, clean_score, food_score, facility_score  FROM \`natural-byway-293514.airbnb.listings_with_aspect_score\` where neighbourhood_group_cleansed like '%${location}%' and accommodates >= ${pax} and price <= ${budget_amt} and host_score is not null and location_score is not null and clean_score is not null and food_score is not null and facility_score is not null order by ${aspect_col} desc`;
+    const query2 = `SELECT distinct listing_url, host_score, location_score, clean_score, food_score, facility_score  FROM \`natural-byway-293514.airbnb.listings_with_aspect_score\` where lower(neighbourhood_group_cleansed) like lower('%${location}%') and accommodates >= ${pax} and price <= ${budget_amt} and host_score is not null and location_score is not null and clean_score is not null and food_score is not null and facility_score is not null order by ${aspect_col} desc`;
     const rows2 = await getData(query2);
     var cnt2 = rows2.length;
     if (cnt2 > 5) {
@@ -101,13 +101,13 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     var lst = "";
     var cnt = 0;
     for (var row of rows2) {
-      lst = lst + row.listing_url + '(' + `host_rating: ${row.host_score} ` + `location_rating: ${row.location_score} ` + `clean_rating: ${row.clean_score} ` + `food_rating: ${row.food_score} ` + `facility_rating: ${row.facility_score} ` + ')' + "\n";
+      lst = lst + row.listing_url + ' (' + `host_rating: ${row.host_score} ` + `location_rating: ${row.location_score} ` + `clean_rating: ${row.clean_score} ` + `food_rating: ${row.food_score} ` + `facility_rating: ${row.facility_score} ` + ')' + "\n\n";
       cnt = cnt + 1
       if (cnt == 5) {
         break;
       }
     }
-    const response_str = `${rows2.length} hosts are found with location as ${location} that can accommodate for ${pax} with price no more than ${budget_amt}${budget_currenty}!` + '\n' + `Here is your top ${cnt2} recommendations:` + '\n' + `${lst}`;
+    const response_str = `${rows2.length} hosts are found with location as ${location} that can accommodate for ${pax} with price no more than ${budget_amt}${budget_currenty}!` + '\n\n' + `Here is your top ${cnt2} recommendations:` + '\n\n' + `${lst}`;
     agent.add(`${response_str}`);
   }
 
